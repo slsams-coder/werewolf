@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Werewolf Tournament Manager</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX compilation -->
     <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
@@ -18,7 +15,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // Inline SVGs for the icons so no external library install is needed
+        // Inline SVGs for the icons
         const Icon = ({ path, size = 24, className = '', fill = 'none' }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {path}
@@ -76,7 +73,7 @@
                 [1, 2, 3, 4].forEach(r => {
                 initial[r] = {
                     players: CLASSES.map(c => ({ 
-                    class: c, role: null, isAbsent: false, isAlive: true, isRecentlyDead: false, isLover: false 
+                    class: c, role: null, isAbsent: false, isAlive: true, isRecentlyDead: false, isLover: false, isTurned: false 
                     })),
                     isStarted: false,
                     nightNumber: 1,
@@ -116,6 +113,7 @@
                     p.isAlive = true;
                     p.isLover = false;
                     p.isRecentlyDead = false;
+                    p.isTurned = false;
                 } else {
                     p.role = null;
                 }
@@ -163,12 +161,18 @@
                 setRoundsData(newData);
             };
 
+            const toggleTurned = (index) => {
+                const newData = { ...roundsData };
+                newData[activeRound].players[index].isTurned = !newData[activeRound].players[index].isTurned;
+                setRoundsData(newData);
+            };
+
             const resetRound = () => {
                 if(!window.confirm(`Are you sure you want to reset Round ${activeRound}? All game progress for this round will be lost.`)) return;
                 
                 const newData = { ...roundsData };
                 newData[activeRound] = {
-                players: CLASSES.map(c => ({ class: c, role: null, isAbsent: false, isAlive: true, isRecentlyDead: false, isLover: false })),
+                players: CLASSES.map(c => ({ class: c, role: null, isAbsent: false, isAlive: true, isRecentlyDead: false, isLover: false, isTurned: false })),
                 isStarted: false,
                 nightNumber: 1,
                 witchUsedPotion: false
@@ -205,7 +209,9 @@
             };
 
             const hasAlive = (category) => {
-                if (category === "Werewolves") return aliveRolesList.some(r => r.includes("Werewolf"));
+                if (category === "Werewolves") {
+                    return currentRound.players.some(p => (p.isAlive || p.isRecentlyDead) && !p.isAbsent && (p.role?.includes("Werewolf") || p.isTurned));
+                }
                 return aliveRolesList.includes(category);
             };
 
@@ -213,9 +219,9 @@
             const aliveCount = currentRound.players.filter(p => p.isAlive && !p.isAbsent && p.role).length;
             const totalCount = currentRound.players.filter(p => !p.isAbsent && p.role).length;
 
-            const getRoleColor = (role) => {
+            const getRoleColor = (role, isTurned) => {
                 if (!role) return '';
-                if (role.includes('Werewolf')) return 'text-red-400';
+                if (role.includes('Werewolf') || isTurned) return 'text-red-400';
                 if (role === 'Serial Killer' || role === 'Fool') return 'text-yellow-400';
                 return 'text-blue-400';
             };
@@ -304,10 +310,22 @@
                                 </div>
                             )}
                             {player.role && (
-                                <div className="mt-2 pt-2 border-t border-slate-600/50 text-center">
-                                <div className={`text-xs font-bold uppercase ${showRoles || !player.isAlive ? getRoleColor(player.role) : 'text-slate-500'}`}>
-                                    {showRoles || !player.isAlive ? player.role : '••••••'}
+                                <div className="mt-2 pt-2 border-t border-slate-600/50 flex flex-col items-center gap-1">
+                                <div className={`text-xs font-bold uppercase text-center ${showRoles || !player.isAlive ? getRoleColor(player.role, player.isTurned) : 'text-slate-500'}`}>
+                                    {showRoles || !player.isAlive ? (player.isTurned ? 'Cursed One (Turned)' : player.role) : '••••••'}
                                 </div>
+                                {player.role === 'Cursed One' && showRoles && currentRound.isStarted && player.isAlive && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); toggleTurned(idx); }}
+                                        className={`text-[10px] font-bold px-2 py-0.5 mt-1 rounded transition-all ${
+                                            player.isTurned 
+                                            ? 'bg-red-900/50 text-red-400 border border-red-500/50 hover:bg-red-900/70' 
+                                            : 'bg-slate-800 text-slate-300 border border-slate-600 hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        {player.isTurned ? 'Undo Turn' : 'Mark as Turned'}
+                                    </button>
+                                )}
                                 </div>
                             )}
                             </div>
