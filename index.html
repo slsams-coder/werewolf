@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Werewolf Tournament Manager</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX compilation -->
     <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
     <div id="root"></div>
 
     <script type="text/babel">
@@ -32,15 +35,22 @@
         const EyeOff = (p) => <Icon {...p} path={<><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></>} />;
         const CheckCircle2 = (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
         const Heart = (p) => <Icon {...p} path={<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>} />;
+        const Settings = (p) => <Icon {...p} path={<><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>} />;
+        const XIcon = (p) => <Icon {...p} path={<><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>} />;
+        const Plus = (p) => <Icon {...p} path={<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>} />;
+        const Trash2 = (p) => <Icon {...p} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>} />;
 
+        // Expanded roles in case of large groups (up to 30 people)
         const INITIAL_ROLES = [
             "Werewolf", "Werewolf (Hunter)", "Red Lady", "Prince", "Seer", 
             "Hunter", "Doctor", "Cupid", "Serial Killer", "Fool", 
             "Doctor", "Witch", "Cursed One", "Shepherd", "Werewolf (cub)", 
-            "Seer", "Sheriff", "Werewolf", "Knight", "Villager"
+            "Seer", "Sheriff", "Werewolf", "Knight", "Villager",
+            "Villager", "Villager", "Villager", "Villager", "Villager",
+            "Villager", "Villager", "Villager", "Villager", "Villager"
         ];
 
-        const CLASSES = [
+        const DEFAULT_CLASSES = [
             "1A", "1B", "1C", "1D", "2A", "2B", "2C", "2D", 
             "3A", "3B", "3C", "3D", "4A", "4B", "4C", "4D", 
             "5A", "5B", "5C", "5D"
@@ -65,20 +75,37 @@
             const [activeRound, setActiveRound] = useState(1);
             const [showRoles, setShowRoles] = useState(false);
             const [completedNightCalls, setCompletedNightCalls] = useState([]);
+            
+            // Rosters State
+            const [rosters, setRosters] = useState(() => {
+                const saved = localStorage.getItem('werewolf_rosters');
+                if (saved) return JSON.parse(saved);
+                return [{ id: 'default', name: 'Original Classes (1A-5D)', players: DEFAULT_CLASSES }];
+            });
+
+            // Settings Modal State
+            const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+            const [isEditingRoster, setIsEditingRoster] = useState(false);
+            const [editingRosterId, setEditingRosterId] = useState(null);
+            const [rosterDraftName, setRosterDraftName] = useState("");
+            const [rosterDraftPlayers, setRosterDraftPlayers] = useState("");
+
+            // Rounds Data State
             const [roundsData, setRoundsData] = useState(() => {
                 const saved = localStorage.getItem('werewolf_tournament_data');
                 if (saved) return JSON.parse(saved);
                 
                 const initial = {};
                 [1, 2, 3, 4].forEach(r => {
-                initial[r] = {
-                    players: CLASSES.map(c => ({ 
-                    class: c, role: null, isAbsent: false, isAlive: true, isRecentlyDead: false, isLover: false, isTurned: false 
-                    })),
-                    isStarted: false,
-                    nightNumber: 1,
-                    witchUsedPotion: false
-                };
+                    initial[r] = {
+                        rosterId: 'default',
+                        players: DEFAULT_CLASSES.map(c => ({ 
+                            class: c, role: null, isAbsent: false, isAlive: true, isRecentlyDead: false, isLover: false, isTurned: false 
+                        })),
+                        isStarted: false,
+                        nightNumber: 1,
+                        witchUsedPotion: false
+                    };
                 });
                 return initial;
             });
@@ -87,8 +114,147 @@
                 localStorage.setItem('werewolf_tournament_data', JSON.stringify(roundsData));
             }, [roundsData]);
 
+            useEffect(() => {
+                localStorage.setItem('werewolf_rosters', JSON.stringify(rosters));
+            }, [rosters]);
+
             const currentRound = roundsData[activeRound];
 
+            // --- Roster Management Functions ---
+            const applyRosterToRound = (rosterId) => {
+                const roster = rosters.find(r => r.id === rosterId);
+                if (!roster) return;
+                
+                const newData = { ...roundsData };
+                newData[activeRound] = {
+                    ...newData[activeRound],
+                    rosterId: rosterId,
+                    players: roster.players.map(c => ({ 
+                        class: c, role: null, isAbsent: false, isAlive: true, isRecentlyDead: false, isLover: false, isTurned: false 
+                    }))
+                };
+                setRoundsData(newData);
+            };
+
+            const saveRosterDraft = () => {
+                const playerList = rosterDraftPlayers.split(/[\n,]+/).map(p => p.trim()).filter(p => p.length > 0);
+                if (playerList.length === 0 || !rosterDraftName.trim()) {
+                    alert("Name and player list cannot be empty.");
+                    return;
+                }
+
+                const newRoster = {
+                    id: editingRosterId || 'roster_' + Date.now(),
+                    name: rosterDraftName.trim(),
+                    players: playerList
+                };
+
+                let updatedRosters;
+                if (editingRosterId) {
+                    updatedRosters = rosters.map(r => r.id === editingRosterId ? newRoster : r);
+                } else {
+                    updatedRosters = [...rosters, newRoster];
+                }
+
+                setRosters(updatedRosters);
+                setEditingRosterId(null);
+                setRosterDraftName("");
+                setRosterDraftPlayers("");
+                setIsEditingRoster(false);
+                
+                if (currentRound.rosterId === newRoster.id && !currentRound.isStarted) {
+                    applyRosterToRound(newRoster.id); 
+                }
+            };
+
+            const deleteRoster = (id) => {
+                if (rosters.length <= 1) {
+                    alert("You must have at least one player group.");
+                    return;
+                }
+                if (confirm("Delete this group? It won't affect games that are already running.")) {
+                    const remainingRosters = rosters.filter(r => r.id !== id);
+                    setRosters(remainingRosters);
+                    if (currentRound.rosterId === id && !currentRound.isStarted) {
+                        applyRosterToRound(remainingRosters[0].id);
+                    }
+                }
+            };
+
+            const openRosterEditor = (roster = null) => {
+                if (roster) {
+                    setEditingRosterId(roster.id);
+                    setRosterDraftName(roster.name);
+                    setRosterDraftPlayers(roster.players.join('\n'));
+                } else {
+                    setEditingRosterId(null);
+                    setRosterDraftName("");
+                    setRosterDraftPlayers("");
+                }
+                setIsEditingRoster(true);
+            };
+
+            // --- Game Sorting Functions ---
+            const sortByRoleOrder = () => {
+                const newData = { ...roundsData };
+                const players = [...newData[activeRound].players];
+
+                const usedIndices = new Set();
+                const playerSortKeys = new Map();
+
+                // Map each player to a unique index in the INITIAL_ROLES array
+                players.forEach(p => {
+                    if (p.isAbsent || !p.role) {
+                        playerSortKeys.set(p.class, 9999); // Absents at the end
+                    } else {
+                        // Find the first index that matches this role AND hasn't been used yet
+                        const index = INITIAL_ROLES.findIndex((r, idx) => r === p.role && !usedIndices.has(idx));
+                        if (index !== -1) {
+                            usedIndices.add(index);
+                            playerSortKeys.set(p.class, index);
+                        } else {
+                            // Fallback if more of a role exist than defined
+                            playerSortKeys.set(p.class, 9000); 
+                        }
+                    }
+                });
+
+                players.sort((a, b) => {
+                    if (a.isAbsent && !b.isAbsent) return 1;
+                    if (!a.isAbsent && b.isAbsent) return -1;
+                    if (a.isAbsent && b.isAbsent) return 0;
+
+                    const keyA = playerSortKeys.get(a.class);
+                    const keyB = playerSortKeys.get(b.class);
+
+                    // If identical keys (fallback), sort alphabetically
+                    if (keyA === keyB) {
+                        return a.class.localeCompare(b.class, undefined, { numeric: true });
+                    }
+                    return keyA - keyB;
+                });
+
+                newData[activeRound].players = players;
+                setRoundsData(newData);
+            };
+
+            const sortByClassOrder = () => {
+                const newData = { ...roundsData };
+                const players = [...newData[activeRound].players];
+
+                players.sort((a, b) => {
+                    if (a.isAbsent && !b.isAbsent) return 1;
+                    if (!a.isAbsent && b.isAbsent) return -1;
+                    if (a.isAbsent && b.isAbsent) return 0;
+                    return a.class.localeCompare(b.class, undefined, { numeric: true });
+                });
+
+                newData[activeRound].players = players;
+                setRoundsData(newData);
+            };
+
+
+            // --- Game Functions ---
             const toggleAbsence = (index) => {
                 const newData = { ...roundsData };
                 newData[activeRound].players[index].isAbsent = !newData[activeRound].players[index].isAbsent;
@@ -131,26 +297,26 @@
                 
                 let nextAlive, nextRecent;
                 if (player.isAlive) {
-                nextAlive = false;
-                nextRecent = true;
+                    nextAlive = false;
+                    nextRecent = true;
                 } else if (player.isRecentlyDead) {
-                nextAlive = false;
-                nextRecent = false;
+                    nextAlive = false;
+                    nextRecent = false;
                 } else {
-                nextAlive = true;
-                nextRecent = false;
+                    nextAlive = true;
+                    nextRecent = false;
                 }
                 
                 player.isAlive = nextAlive;
                 player.isRecentlyDead = nextRecent;
 
                 if (isLover) {
-                newData[activeRound].players.forEach(p => {
-                    if (p.isLover && p !== player) {
-                    p.isAlive = nextAlive;
-                    p.isRecentlyDead = nextRecent;
-                    }
-                });
+                    newData[activeRound].players.forEach(p => {
+                        if (p.isLover && p !== player) {
+                        p.isAlive = nextAlive;
+                        p.isRecentlyDead = nextRecent;
+                        }
+                    });
                 }
                 setRoundsData(newData);
             };
@@ -170,13 +336,17 @@
             const resetRound = () => {
                 if(!window.confirm(`Are you sure you want to reset Round ${activeRound}? All game progress for this round will be lost.`)) return;
                 
+                const roster = rosters.find(r => r.id === currentRound.rosterId) || rosters[0];
                 const newData = { ...roundsData };
+                
                 newData[activeRound] = {
-                players: CLASSES.map(c => ({ class: c, role: null, isAbsent: false, isAlive: true, isRecentlyDead: false, isLover: false, isTurned: false })),
-                isStarted: false,
-                nightNumber: 1,
-                witchUsedPotion: false
+                    rosterId: roster.id,
+                    players: roster.players.map(c => ({ class: c, role: null, isAbsent: false, isAlive: true, isRecentlyDead: false, isLover: false, isTurned: false })),
+                    isStarted: false,
+                    nightNumber: 1,
+                    witchUsedPotion: false
                 };
+                
                 setRoundsData(newData);
                 setCompletedNightCalls([]);
                 setShowRoles(false);
@@ -227,7 +397,7 @@
             };
 
             return (
-                <div className="min-h-screen font-sans p-4 md:p-8 bg-slate-900 text-slate-100">
+                <div className="font-sans p-4 md:p-8">
                 <header className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
                     <div>
                     <h1 className="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600 uppercase italic">
@@ -253,36 +423,65 @@
                 <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <section className="lg:col-span-7 space-y-6">
                     <div className="rounded-3xl p-6 border shadow-xl bg-slate-800 border-slate-700">
-                        <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold flex items-center gap-2">
-                            <Users className="text-orange-500" /> Player Registration
-                        </h2>
-                        <div className="flex gap-2 items-center">
-                            {currentRound.isStarted && (
-                            <div className="mr-4 px-4 py-1 bg-slate-900/50 rounded-full text-sm font-bold border border-slate-700/50">
-                                Alive: <span className="text-green-400">{aliveCount}</span> / {totalCount}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <Users className="text-orange-500" /> Player Registration
+                            </h2>
+                            <div className="flex flex-wrap gap-2 items-center">
+                                {/* Group Selector (Only visible if game hasn't started) */}
+                                {!currentRound.isStarted && (
+                                    <div className="flex items-center gap-1 mr-2 bg-slate-900/60 p-1 rounded-xl border border-slate-700">
+                                        <select 
+                                            className="bg-transparent text-sm font-bold text-slate-300 outline-none cursor-pointer pl-2 max-w-[150px]"
+                                            value={currentRound.rosterId || 'default'}
+                                            onChange={(e) => applyRosterToRound(e.target.value)}
+                                            title="Select Player Group"
+                                        >
+                                            {rosters.map(r => <option key={r.id} value={r.id} className="bg-slate-800">{r.name}</option>)}
+                                        </select>
+                                        <button 
+                                            onClick={() => setIsManageModalOpen(true)}
+                                            className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors"
+                                            title="Manage Groups"
+                                        >
+                                            <Settings size={16} />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Sorting Controls (Only visible after start) */}
+                                {currentRound.isStarted && (
+                                    <div className="flex items-center bg-slate-900/80 rounded-xl border border-slate-700 shadow-inner overflow-hidden mr-2">
+                                        <button onClick={sortByClassOrder} className="px-3 py-1.5 text-xs font-bold hover:bg-slate-700 text-slate-400 hover:text-white border-r border-slate-700 transition-colors" title="Sort by Player Name">A-Z</button>
+                                        <button onClick={sortByRoleOrder} className="px-3 py-1.5 text-xs font-bold hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" title="Sort by Role Order">ROLE</button>
+                                    </div>
+                                )}
+
+                                {currentRound.isStarted && (
+                                <div className="px-4 py-1.5 bg-slate-900/50 rounded-xl text-sm font-bold border border-slate-700/50">
+                                    Alive: <span className="text-green-400">{aliveCount}</span> / {totalCount}
+                                </div>
+                                )}
+                                {currentRound.isStarted && (
+                                <button onClick={() => setShowRoles(!showRoles)} className="p-2 hover:bg-slate-700 rounded-xl text-slate-400 transition-colors border border-transparent hover:border-slate-600" title={showRoles ? "Hide Roles" : "Show Roles"}>
+                                    {showRoles ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                                )}
+                                <button onClick={resetRound} className="p-2 hover:bg-slate-700 rounded-xl text-slate-400 transition-colors border border-transparent hover:border-slate-600" title="Reset Round">
+                                <RotateCcw size={20} />
+                                </button>
+                                {!currentRound.isStarted && (
+                                <button onClick={assignRoles} className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg">
+                                    <Play size={18} fill="currentColor" /> Start Game
+                                </button>
+                                )}
                             </div>
-                            )}
-                            {currentRound.isStarted && (
-                            <button onClick={() => setShowRoles(!showRoles)} className="p-2 hover:bg-slate-700 rounded-full text-slate-400">
-                                {showRoles ? <EyeOff size={20} /> : <Eye size={20} />}
-                            </button>
-                            )}
-                            <button onClick={resetRound} className="p-2 hover:bg-slate-700 rounded-full text-slate-400">
-                            <RotateCcw size={20} />
-                            </button>
-                            {!currentRound.isStarted && (
-                            <button onClick={assignRoles} className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg">
-                                <Play size={18} fill="currentColor" /> Start Game
-                            </button>
-                            )}
-                        </div>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {currentRound.players.map((player, idx) => (
                             <div 
-                            key={idx}
+                            key={player.class}
                             onClick={() => !currentRound.isStarted ? toggleAbsence(idx) : !player.isAbsent && toggleAlive(idx)}
                             className={`relative p-4 rounded-2xl border-2 transition-all cursor-pointer select-none
                                 ${player.isAbsent ? 'bg-slate-900 border-slate-800 opacity-40' 
@@ -299,8 +498,8 @@
                                 <Heart size={16} fill={player.isLover ? "currentColor" : "none"} />
                                 </button>
                             )}
-                            <div className="text-xs font-black text-slate-400 mb-1 text-center uppercase">Class</div>
-                            <div className={`text-2xl font-bold text-center ${currentRound.isStarted && !player.isAlive ? 'text-slate-500 line-through' : ''}`}>
+                            <div className="text-[10px] font-black text-slate-400 mb-1 text-center uppercase tracking-wider">Player</div>
+                            <div className={`text-xl sm:text-2xl font-bold text-center leading-tight truncate px-1 ${currentRound.isStarted && !player.isAlive ? 'text-slate-500 line-through' : ''}`} title={player.class}>
                                 {player.class}
                             </div>
                             {player.isAbsent && <div className="absolute top-2 right-2 text-red-500"><UserMinus size={16} /></div>}
@@ -392,6 +591,108 @@
                     </div>
                     </section>
                 </main>
+
+                {/* Manage Groups Modal */}
+                {isManageModalOpen && (
+                    <div className="fixed inset-0 bg-slate-950/80 flex items-center justify-center z-50 p-4">
+                        <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 max-w-xl w-full shadow-2xl relative flex flex-col max-h-[90vh]">
+                            <button 
+                                onClick={() => {setIsManageModalOpen(false); setIsEditingRoster(false); setEditingRosterId(null);}} 
+                                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+                            >
+                                <XIcon size={24} />
+                            </button>
+                            
+                            <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
+                                <Users className="text-indigo-400"/> Player Groups
+                            </h2>
+
+                            <div className="flex-1 overflow-y-auto mb-6 custom-scrollbar pr-2 space-y-4">
+                                {/* List View */}
+                                {!isEditingRoster ? (
+                                    <>
+                                        <button 
+                                            onClick={() => openRosterEditor()}
+                                            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-indigo-500/50 rounded-xl text-indigo-400 font-bold hover:bg-indigo-500/10 transition-colors"
+                                        >
+                                            <Plus size={20} /> Create New Group
+                                        </button>
+                                        
+                                        <div className="space-y-3 mt-4">
+                                            {rosters.map(r => (
+                                                <div key={r.id} className="flex justify-between items-center bg-slate-700/50 p-4 rounded-xl border border-slate-600">
+                                                    <div>
+                                                        <div className="font-bold text-white text-lg">{r.name}</div>
+                                                        <div className="text-sm text-slate-400">{r.players.length} players</div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button 
+                                                            onClick={() => openRosterEditor(r)}
+                                                            className="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded text-sm font-bold text-white transition-colors"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => deleteRoster(r.id)}
+                                                            className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                                                            title="Delete Group"
+                                                        >
+                                                            <Trash2 size={20} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    /* Edit View */
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-400 mb-2">Group Name</label>
+                                            <input 
+                                                type="text" 
+                                                className="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-white outline-none focus:border-indigo-500"
+                                                placeholder="e.g. Wednesday Club, Grade 10s..."
+                                                value={rosterDraftName}
+                                                onChange={e => setRosterDraftName(e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-400 mb-2">Players (Comma or line separated)</label>
+                                            <textarea 
+                                                className="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-white outline-none focus:border-indigo-500 custom-scrollbar"
+                                                rows="8"
+                                                placeholder="Alice, Bob, Charlie&#10;David&#10;Eve..."
+                                                value={rosterDraftPlayers}
+                                                onChange={e => setRosterDraftPlayers(e.target.value)}
+                                            ></textarea>
+                                        </div>
+                                        <div className="flex justify-end gap-3 mt-4">
+                                            <button 
+                                                onClick={() => setIsEditingRoster(false)}
+                                                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-white transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                onClick={saveRosterDraft}
+                                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-white transition-colors"
+                                            >
+                                                Save Group
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <style>{`
+                    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                    .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+                `}</style>
                 </div>
             );
         };
